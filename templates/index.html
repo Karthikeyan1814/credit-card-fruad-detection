@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Fraud Detection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #e96443 100%);
+            --card-bg: rgba(255,255,255,0.95);
+            --text-color: #1e3c72;
+            --border-color: #e96443;
+            --input-bg: #fff;
+            --input-text: #000;
+            --info-text: #666;
+            --info-box-bg: linear-gradient(90deg, #f8ffae 0%, #43cea2 100%);
+            --sample-box-bg: linear-gradient(90deg, #fff3cd 0%, #ffeeba 100%);
+            --table-stripe: #f8ffae33;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #0f1b2d 0%, #1a2c4e 50%, #2d1a1a 100%);
+            --card-bg: rgba(30, 30, 30, 0.95);
+            --text-color: #e0e0e0;
+            --border-color: #e96443;
+            --input-bg: #2d2d2d;
+            --input-text: #e0e0e0;
+            --info-text: #b0b0b0;
+            --info-box-bg: linear-gradient(90deg, #2d3a1e 0%, #1a3d2e 100%);
+            --sample-box-bg: linear-gradient(90deg, #3d3a1e 0%, #3d3a1e 100%);
+            --table-stripe: rgba(255, 255, 255, 0.05);
+        }
+
+        body {
+            min-height: 100vh;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            padding: 20px;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 700px;
+        }
+
+        .card {
+            border-radius: 18px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.18);
+            margin-bottom: 24px;
+            border: none;
+            background: var(--card-bg);
+            backdrop-filter: blur(2px);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: 0 16px 40px 0 rgba(31, 38, 135, 0.25);
+        }
+
+        .form-control {
+            border-radius: 10px;
+            border: 1.5px solid var(--border-color);
+            transition: all 0.2s;
+            background-color: var(--input-bg);
+            color: var(--input-text);
+        }
+
+        .form-control:focus {
+            border-color: #2a5298;
+            box-shadow: 0 0 0 2px #2a529855;
+        }
+
+        .btn-primary {
+            border-radius: 10px;
+            padding: 10px 24px;
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+            border: none;
+            font-weight: 600;
+            letter-spacing: 1px;
+            box-shadow: 0 2px 8px 0 rgba(46, 91, 255, 0.10);
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(90deg, #e96443 0%, #904e95 100%);
+            box-shadow: 0 4px 16px 0 rgba(233, 100, 67, 0.15);
+        }
+
+        .btn-warning {
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .btn-success {
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .result-card {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .variable-info {
+            font-size: 0.95em;
+            color: var(--info-text);
+            margin-top: 0.25rem;
+        }
+
+        .input-group {
+            margin-bottom: 1rem;
+        }
+
+        .input-group-text {
+            background-color: var(--input-bg);
+            border-radius: 10px 0 0 10px;
+            border: 1.5px solid var(--border-color);
+            border-right: none;
+            color: var(--text-color);
+        }
+
+        .info-box {
+            background: var(--info-box-bg);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px 0 rgba(67, 206, 162, 0.10);
+            color: var(--text-color);
+        }
+
+        .sample-box {
+            background: var(--sample-box-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px 0 rgba(255, 243, 205, 0.10);
+            color: var(--text-color);
+        }
+
+        .tooltip-inner {
+            max-width: 300px;
+        }
+
+        h1, h5 {
+            color: #1e3c72;
+            font-weight: 700;
+        }
+
+        h1 {
+            color: #fff;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(270deg, #f8ffae, #43cea2, #e96443, #904e95, #f8ffae);
+            background-size: 1000% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: flowing-gradient 4s linear infinite;
+            text-shadow: 0 0 4px #f8ffae88, 0 0 10px #e9644344, 0 0 16px #43cea244;
+        }
+
+        @keyframes flowing-gradient {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .card-header {
+            background: none;
+            border-bottom: none;
+        }
+
+        .table-striped>tbody>tr:nth-of-type(odd) {
+            background-color: var(--table-stripe);
+        }
+
+        .spinner-border {
+            color: #e96443;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--card-bg);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+
+        .visualization-section {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .visualization-section.active {
+            display: block;
+        }
+
+        .chart-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .chart-col {
+            flex: 1;
+            min-width: 0;
+        }
+
+        @media (max-width: 768px) {
+            .chart-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="themeToggle" title="Toggle Dark Mode">
+        <i class="fas fa-moon"></i>
+    </button>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Credit Card Fraud Detection</h1>
+        
+        <!-- Information Box -->
+        <div class="info-box">
+            <h5>About the Variables</h5>
+            <p>The V1, V2, and V3 variables are Principal Components derived from the original credit card transaction data using Principal Component Analysis (PCA). These components represent the most important patterns in the transaction data:</p>
+            <ul>
+                <li><strong>V1 (Principal Component 1):</strong> Captures the most significant variation in transaction patterns, often related to transaction amount and timing patterns.</li>
+                <li><strong>V2 (Principal Component 2):</strong> Represents the second most important pattern, typically related to merchant category and transaction location patterns.</li>
+                <li><strong>V3 (Principal Component 3):</strong> Captures additional patterns that help distinguish between legitimate and fraudulent transactions.</li>
+            </ul>
+            <p>These components are used because they:</p>
+            <ul>
+                <li>Reduce the complexity of the original data while preserving important patterns</li>
+                <li>Help identify unusual transaction patterns that might indicate fraud</li>
+                <li>Maintain privacy by not using raw transaction data</li>
+            </ul>
+        </div>
+
+        <!-- Sample Data Box -->
+        <div class="sample-box">
+            <h5>Don't know the V1, V2, V3 values?</h5>
+            <p>No problem! You can use our sample data generator to get realistic values for testing:</p>
+            <button id="generateSample" class="btn btn-warning">Generate Sample Values</button>
+            <div id="sampleValues" class="mt-3" style="display: none;">
+                <p>Sample values generated:</p>
+                <ul>
+                    <li>Amount: $<span id="sampleAmount">0.00</span></li>
+                    <li>Time: <span id="sampleTime">0</span> seconds</li>
+                    <li>V1: <span id="sampleV1">0.00</span></li>
+                    <li>V2: <span id="sampleV2">0.00</span></li>
+                    <li>V3: <span id="sampleV3">0.00</span></li>
+                </ul>
+                <button id="useSample" class="btn btn-success">Use These Values</button>
+            </div>
+        </div>
+        
+        <!-- CSV Upload Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Upload CSV File</h5>
+            </div>
+            <div class="card-body">
+                <form id="csvForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="csvFile" class="form-label">Select CSV File</label>
+                        <input type="file" class="form-control" id="csvFile" accept=".csv" required>
+                        <div class="form-text">CSV must contain V1, V2, V3, Amount, and Time columns</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Analyze CSV</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Single Transaction Form -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Single Transaction Analysis</h5>
+            </div>
+            <div class="card-body">
+                <form id="predictionForm">
+                    <div class="mb-3">
+                        <label for="amount" class="form-label">Transaction Amount</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="amount" step="0.01" min="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="time" class="form-label">Transaction Time</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="time" step="1" min="0" required>
+                            <span class="input-group-text">seconds</span>
+                        </div>
+                        <div class="form-text">Time in seconds from the first transaction</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="v1" class="form-label">V1 (Principal Component 1)</label>
+                        <input type="number" class="form-control" id="v1" step="any" required>
+                        <div class="variable-info">First principal component capturing transaction amount and timing patterns</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="v2" class="form-label">V2 (Principal Component 2)</label>
+                        <input type="number" class="form-control" id="v2" step="any" required>
+                        <div class="variable-info">Second principal component capturing merchant and location patterns</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="v3" class="form-label">V3 (Principal Component 3)</label>
+                        <input type="number" class="form-control" id="v3" step="any" required>
+                        <div class="variable-info">Third principal component capturing additional transaction patterns</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Predict</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="loading text-center mt-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Processing...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div class="result-card mt-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Prediction Results</h5>
+                </div>
+                <div class="card-body">
+                    <div id="singleResult">
+                        <h6>Prediction: <span id="predictionResult"></span></h6>
+                        <p>Confidence: <span id="confidenceResult"></span>%</p>
+                    </div>
+                    <div id="csvResults" style="display: none;">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Transaction ID</th>
+                                        <th>Prediction</th>
+                                        <th>Confidence</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="csvResultsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualization Section -->
+        <div class="visualization-section" id="visualizationSection">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Transaction Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-row">
+                        <div class="chart-col">
+                            <canvas id="predictionChart"></canvas>
+                        </div>
+                        <div class="chart-col">
+                            <canvas id="confidenceChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-row">
+                        <div class="chart-col">
+                            <canvas id="featureImportanceChart"></canvas>
+                        </div>
+                        <div class="chart-col">
+                            <canvas id="transactionPatternChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://kit.fontawesome.com/your-font-awesome-kit.js"></script>
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const body = document.body;
+        
+        // Check for saved theme preference
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) {
+            body.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+            updateChartsTheme(newTheme);
+        });
+
+        function updateThemeIcon(theme) {
+            const icon = themeToggle.querySelector('i');
+            icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // Chart Initialization
+        function initializeCharts() {
+            // Prediction Distribution Chart
+            const predictionCtx = document.getElementById('predictionChart').getContext('2d');
+            window.predictionChart = new Chart(predictionCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Normal', 'Fraud'],
+                    datasets: [{
+                        data: [0, 0],
+                        backgroundColor: ['#43cea2', '#e96443']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Prediction Distribution'
+                        }
+                    }
+                }
+            });
+
+            // Confidence Chart
+            const confidenceCtx = document.getElementById('confidenceChart').getContext('2d');
+            window.confidenceChart = new Chart(confidenceCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Confidence'],
+                    datasets: [{
+                        label: 'Prediction Confidence',
+                        data: [0],
+                        backgroundColor: '#2a5298'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // Feature Importance Chart
+            const featureCtx = document.getElementById('featureImportanceChart').getContext('2d');
+            window.featureChart = new Chart(featureCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['V1', 'V2', 'V3', 'Amount', 'Time'],
+                    datasets: [{
+                        label: 'Feature Importance',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(42, 82, 152, 0.2)',
+                        borderColor: '#2a5298',
+                        pointBackgroundColor: '#2a5298'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Transaction Pattern Chart
+            const patternCtx = document.getElementById('transactionPatternChart').getContext('2d');
+            window.patternChart = new Chart(patternCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Transaction Pattern',
+                        data: [],
+                        borderColor: '#e96443',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChartsTheme(theme) {
+            const isDark = theme === 'dark';
+            const textColor = isDark ? '#e0e0e0' : '#1e3c72';
+            
+            Chart.defaults.color = textColor;
+            Chart.defaults.borderColor = isDark ? '#444' : '#ddd';
+            
+            // Update all charts
+            Object.values(Chart.instances).forEach(chart => {
+                chart.update();
+            });
+        }
+
+        // Initialize charts when the page loads
+        document.addEventListener('DOMContentLoaded', initializeCharts);
+
+        // Update charts with prediction results
+        function updateCharts(prediction, confidence, features) {
+            const visualizationSection = document.getElementById('visualizationSection');
+            visualizationSection.classList.add('active');
+
+            // Update prediction chart
+            predictionChart.data.datasets[0].data = [
+                prediction === 'Normal' ? 1 : 0,
+                prediction === 'Fraud' ? 1 : 0
+            ];
+            predictionChart.update();
+
+            // Update confidence chart
+            confidenceChart.data.datasets[0].data = [confidence];
+            confidenceChart.update();
+
+            // Update feature importance chart
+            featureChart.data.datasets[0].data = features;
+            featureChart.update();
+
+            // Update transaction pattern chart
+            const time = new Date().toLocaleTimeString();
+            patternChart.data.labels.push(time);
+            patternChart.data.datasets[0].data.push(confidence);
+            
+            // Keep only last 10 points
+            if (patternChart.data.labels.length > 10) {
+                patternChart.data.labels.shift();
+                patternChart.data.datasets[0].data.shift();
+            }
+            patternChart.update();
+        }
+
+        // Modify the existing prediction form submission handler
+        document.getElementById('predictionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const loading = document.querySelector('.loading');
+            const resultCard = document.querySelector('.result-card');
+            const singleResult = document.getElementById('singleResult');
+            const csvResults = document.getElementById('csvResults');
+            
+            loading.style.display = 'block';
+            resultCard.style.display = 'none';
+            singleResult.style.display = 'block';
+            csvResults.style.display = 'none';
+
+            const data = {
+                Amount: parseFloat(document.getElementById('amount').value),
+                Time: parseInt(document.getElementById('time').value),
+                V1: parseFloat(document.getElementById('v1').value),
+                V2: parseFloat(document.getElementById('v2').value),
+                V3: parseFloat(document.getElementById('v3').value)
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('predictionResult').textContent = result.prediction;
+                    document.getElementById('confidenceResult').textContent = (result.confidence * 100).toFixed(2);
+                    resultCard.style.display = 'block';
+
+                    // After getting the prediction result, update the charts
+                    const features = [
+                        parseFloat(document.getElementById('v1').value),
+                        parseFloat(document.getElementById('v2').value),
+                        parseFloat(document.getElementById('v3').value),
+                        parseFloat(document.getElementById('amount').value),
+                        parseFloat(document.getElementById('time').value)
+                    ];
+
+                    updateCharts(
+                        result.prediction,
+                        result.confidence,
+                        features
+                    );
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        document.getElementById('csvForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const loading = document.querySelector('.loading');
+            const resultCard = document.querySelector('.result-card');
+            const singleResult = document.getElementById('singleResult');
+            const csvResults = document.getElementById('csvResults');
+            
+            loading.style.display = 'block';
+            resultCard.style.display = 'none';
+            singleResult.style.display = 'none';
+            csvResults.style.display = 'block';
+
+            const formData = new FormData();
+            formData.append('file', document.getElementById('csvFile').files[0]);
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    const tbody = document.getElementById('csvResultsBody');
+                    tbody.innerHTML = '';
+                    
+                    result.results.forEach(item => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.transaction_id}</td>
+                            <td>${item.prediction}</td>
+                            <td>${(item.confidence * 100).toFixed(2)}%</td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+
+        // Function to handle number input
+        function handleNumberInput(input) {
+            // Remove any non-numeric characters except decimal point
+            input.value = input.value.replace(/[^\d.-]/g, '');
+            
+            // Ensure only one decimal point
+            const parts = input.value.split('.');
+            if (parts.length > 2) {
+                input.value = parts[0] + '.' + parts.slice(1).join('');
+            }
+        }
+
+        // Add input handlers to all number inputs
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+            input.addEventListener('input', () => handleNumberInput(input));
+        });
+
+        // Sample data generation
+        document.getElementById('generateSample').addEventListener('click', async () => {
+            try {
+                const response = await fetch('/get_sample');
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('sampleAmount').textContent = data.Amount.toFixed(2);
+                    document.getElementById('sampleTime').textContent = data.Time;
+                    document.getElementById('sampleV1').textContent = data.V1.toFixed(4);
+                    document.getElementById('sampleV2').textContent = data.V2.toFixed(4);
+                    document.getElementById('sampleV3').textContent = data.V3.toFixed(4);
+                    document.getElementById('sampleValues').style.display = 'block';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        });
+
+        // Use sample values
+        document.getElementById('useSample').addEventListener('click', () => {
+            document.getElementById('amount').value = document.getElementById('sampleAmount').textContent;
+            document.getElementById('time').value = document.getElementById('sampleTime').textContent;
+            document.getElementById('v1').value = document.getElementById('sampleV1').textContent;
+            document.getElementById('v2').value = document.getElementById('sampleV2').textContent;
+            document.getElementById('v3').value = document.getElementById('sampleV3').textContent;
+        });
+    </script>
+</body>
+</html>
