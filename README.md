@@ -67,7 +67,8 @@ The current implementation uses synthetic data for demonstration purposes. In a 
 - Evaluation metrics: Precision, Recall, F1-score, and Confusion Matrix 
 
 
-what should we do follow this stepes 
+**what should we do follow this stepes**
+download dataset https://www.kaggle.com/datasets/mlg-ulb/creditcardfraud
 *install visual c++ build tools 
 # Deactivate current environment
 deactivate
